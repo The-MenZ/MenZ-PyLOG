@@ -1,0 +1,39 @@
+{% extends "layout.html" %}
+
+{% block body %}
+<h2>{{ user.name.S }}</h2>
+
+<div>
+  <div>{{ user.email.S }}</div>
+</div>
+
+<div>
+  <ul>
+    <li><a href="{{ url_for('user_edit', user_id=user.id.S) }}">edit</a></li>
+    <li><a class="user-delete-link" href="#" data-delete-url="{{ url_for('user_delete', user_id=user.id.S) }}">delete</a></li>
+  </ul>
+</div>
+
+<script src="https://code.jquery.com/jquery-1.9.1.min.js"></script>
+<script>
+  $(function() {
+    $(".user-delete-link").on("click", function() {
+      var delete_url = $(this).attr('data-delete-url');
+      $.ajax({
+        url: delete_url,
+        type: 'DELETE',
+        success: function(response) {
+          if (response.status == 'OK') {
+            window.location = '{{ url_for('user_list') }}';
+          } else {
+            alert('Delete failed.')
+          }
+        }
+      });
+      return false;
+    });
+  });
+</script>
+
+{% endblock body %}
+

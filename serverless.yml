@@ -1,0 +1,79 @@
+service: serverless-flask
+ 
+plugins:
+  - serverless-python-requirements
+  - serverless-wsgi
+ 
+custom:
+  tableName: 'users-table-${self:provider.stage}'
+  tableNameEntries: 'entries-table-${self:provider.stage}'
+  tableNameUsers: 'users-table-${self:provider.stage}'
+  wsgi:
+#    app: main.app
+    app: app.app
+    packRequirements: false
+  pythonRequirements:
+    dockerizePip: non-linux
+ 
+provider:
+  name: aws
+  runtime: python3.7
+  stage: dev
+  region: ap-northeast-1
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - logs:CreateLogGroup
+        - logs:CreateLogStream
+        - logs:PutLogEvents
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource:
+#        - { "Fn::GetAtt": ["UsersDynamoDBTable", "Arn" ] }
+        - { "Fn::GetAtt": ["EntriesTable", "Arn" ] }
+        - { "Fn::GetAtt": ["UsersTable", "Arn" ] }
+  environment:
+    USERS_TABLE: ${self:custom.tableNameUsers}
+    ENTRIES_TABLE: ${self:custom.tableNameEntries}
+ 
+functions:
+  app:
+    handler: wsgi.handler
+    events:
+      - http: ANY /
+      - http: 'ANY {proxy+}'
+
+resources:
+  Resources:
+    EntriesTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        TableName: ${self:custom.tableNameEntries}
+#        TableName: ${self:custom.tableName}
+        AttributeDefinitions:
+          - AttributeName: title
+            AttributeType: S
+        KeySchema:
+          - AttributeName: title
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+    UsersTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        TableName: ${self:custom.tableNameUsers}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
